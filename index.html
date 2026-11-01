@@ -3,120 +3,117 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Crumble Corner – Cookie Catch</title>
+<title>Crumble Corner – Cookie Clicker</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap">
 <style>
-  html,body{margin:0;height:100%;background:#3B1F1A;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif}
-  canvas{background:#FFF0F2;max-width:100vw;max-height:100vh;aspect-ratio:2/3;height:100vh;touch-action:none;display:block}
+:root{--ink:#3B1F1A;--pink:#FFE3E8;--rasp:#C42A52;--butter:#F5C04A;--dough:#E3A857;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;height:100dvh;background:var(--pink);color:var(--ink);font:16px 'DM Sans',system-ui,sans-serif;overflow:hidden}
+h1,h2,.count b{font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--rasp);outline-offset:3px}
+.app{display:grid;grid-template-columns:1fr 400px;height:100%}
+.stage{position:relative;display:flex;flex-direction:column;align-items:center;padding:24px;overflow:hidden}
+.top{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.top h1{font-size:28px}.top label{font-size:14px;display:flex;gap:6px;align-items:center;min-height:44px}
+.count{text-align:center;margin-top:20px}
+.count b{display:block;font-size:clamp(40px,8vw,84px);line-height:1}
+.count span{font-weight:700;font-size:18px}.count em{display:block;font-style:normal;color:var(--rasp);font-weight:700;margin-top:4px}
+#cookie{margin:auto;width:min(46vh,340px);aspect-ratio:1;border:0;background:none;padding:0;border-radius:50%;touch-action:manipulation;user-select:none;-webkit-tap-highlight-color:transparent}
+#cookie svg{width:100%;height:100%;filter:drop-shadow(0 14px 0 rgba(59,31,26,.18));transition:transform .08s}
+#cookie:active svg,#cookie.hit svg{transform:scale(.93) rotate(-3deg)}
+.float{position:absolute;pointer-events:none;font-weight:800;font-size:24px;color:var(--rasp);animation:up .9s ease-out forwards;text-shadow:0 2px 0 #fff}
+.crumb{position:absolute;width:7px;height:7px;border-radius:2px;background:var(--dough);pointer-events:none;animation:fall .7s ease-in forwards}
+@keyframes up{to{transform:translateY(-90px);opacity:0}}
+@keyframes fall{to{transform:translate(var(--dx),70px) rotate(200deg);opacity:0}}
+#toast{position:absolute;bottom:18px;left:50%;transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-weight:500;opacity:0;transition:.25s;max-width:90%;text-align:center;pointer-events:none}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#prestige{background:var(--butter);border:2px solid var(--ink);border-radius:999px;padding:10px 20px;font-weight:700;min-height:44px;margin-bottom:36px}
+#gold{position:absolute;width:64px;height:64px;border:0;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFF3B0,var(--butter) 55%,#C98A1A);box-shadow:0 0 0 6px rgba(245,192,74,.4);font-weight:800;animation:pulse 1s infinite alternate}
+@keyframes pulse{to{transform:scale(1.15)}}
+.shop{background:var(--card);border-left:3px solid var(--ink);padding:16px;overflow-y:auto}
+.shop h2{font-size:20px;margin:16px 0 8px}
+.qty{display:flex;gap:8px;align-items:center;font-weight:700}
+.qty button{flex:1;min-height:44px;border:2px solid var(--ink);border-radius:12px;background:#fff;font-weight:700}
+.qty button[aria-pressed=true]{background:var(--ink);color:#fff}
+.ups{display:flex;flex-wrap:wrap;gap:8px}
+.up{border:2px solid var(--ink);background:var(--butter);border-radius:12px;padding:8px 10px;text-align:left;min-height:44px;flex:1 1 150px}
+.up small,.item small{display:block;font-size:13px}
+.up.no,.item.no{background:#F3E9E6;border-color:#B9A29C}
+.item{display:grid;grid-template-columns:1fr auto;gap:2px 10px;width:100%;text-align:left;border:2px solid var(--ink);border-radius:14px;background:#fff;padding:10px 12px;margin-bottom:8px;min-height:44px}
+.item:not(.no):hover,.up:not(.no):hover{background:var(--pink)}
+.item b{font-size:17px}.item .n{grid-row:span 2;align-self:center;font:800 28px 'Bricolage Grotesque',sans-serif}
+.item .p{color:var(--rasp);font-weight:700}.item.no .p{color:var(--ink)}
+.foot{font-size:13px;margin-top:16px}
+@media(max-width:760px){
+ .app{grid-template-columns:1fr;grid-template-rows:56dvh 1fr}
+ .stage{padding:12px}.shop{border-left:0;border-top:3px solid var(--ink)}
+ #cookie{width:min(30dvh,240px)}.count{margin-top:6px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<canvas id="c" width="480" height="720" aria-label="Cookie Catch game. Move the tray with arrow keys, A and D, or by dragging."></canvas>
+<main class="app">
+<section class="stage" id="stage">
+  <div class="top"><h1>Crumble Corner</h1><label><input type="checkbox" id="off"> Offline baking</label></div>
+  <div class="count"><b id="count">0</b><span>cookies</span><em id="cps"></em></div>
+  <button id="cookie" aria-label="Bake a cookie">
+    <svg viewBox="0 0 200 200" aria-hidden="true">
+      <circle cx="100" cy="100" r="92" fill="#C98A3A"/><circle cx="100" cy="96" r="90" fill="#E3A857"/>
+      <path d="M40 70a70 70 0 0 1 60-38" stroke="#F3C987" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <g fill="#3B1F1A"><ellipse cx="70" cy="70" rx="14" ry="10"/><ellipse cx="128" cy="62" rx="12" ry="9"/><ellipse cx="100" cy="112" rx="15" ry="11"/><ellipse cx="148" cy="112" rx="11" ry="8"/><ellipse cx="62" cy="130" rx="12" ry="9"/><ellipse cx="116" cy="154" rx="13" ry="9"/></g>
+    </svg>
+  </button>
+  <button id="prestige" hidden></button>
+  <div id="toast" role="status" aria-live="polite"></div>
+</section>
+<aside class="shop">
+  <div class="qty" id="qty">Buy <button data-q="1" aria-pressed="true">1</button><button data-q="10" aria-pressed="false">10</button><button data-q="100" aria-pressed="false">100</button><button data-q="max" aria-pressed="false">Max</button></div>
+  <h2>Upgrades</h2><div class="ups" id="ups"></div>
+  <h2>Bakery</h2><div id="items"></div>
+  <p class="foot" id="stats"></p>
+</aside>
+</main>
 <script>
-const cv = document.getElementById('c'), ctx = cv.getContext('2d');
-const W = cv.width, H = cv.height;
-const C = {ink:'#3B1F1A', pink:'#FFF0F2', rasp:'#C42A52', dough:'#E3A857', gold:'#F2B71F', burnt:'#2A1512'};
-let state = 'menu', score, lives, combo, best = +(localStorage.getItem('cc_best') || 0);
-let tray, items, crumbs, spawnT, speed, keys = {}, paused = false, last = 0;
-
-function reset() {
-  score = 0; lives = 3; combo = 0; items = []; crumbs = []; spawnT = 0; speed = 160;
-  tray = {x: W / 2, w: 110, h: 18, y: H - 70};
-}
-
-function spawn() {
-  const r = Math.random();
-  const type = r < 0.18 ? 'burnt' : r < 0.26 ? 'gold' : 'normal';
-  items.push({type, x: 30 + Math.random() * (W - 60), y: -30, r: 22, rot: Math.random() * 6,
-    vr: (Math.random() - .5) * 3, chips: Array.from({length: 5}, () => [Math.random() * 2 - 1, Math.random() * 2 - 1])});
-}
-
-function burst(x, y, color) {
-  for (let i = 0; i < 10; i++) crumbs.push({x, y, vx: (Math.random() - .5) * 220, vy: -Math.random() * 200, t: .5, color});
-}
-
-function update(dt) {
-  const move = (keys.ArrowRight || keys.d ? 1 : 0) - (keys.ArrowLeft || keys.a ? 1 : 0);
-  tray.x = Math.max(tray.w / 2, Math.min(W - tray.w / 2, tray.x + move * 420 * dt));
-  spawnT -= dt;
-  if (spawnT <= 0) { spawn(); spawnT = Math.max(.35, 1 - score / 400); }
-  speed = 160 + Math.min(score * 1.2, 260);
-  for (const it of items) {
-    it.y += speed * dt; it.rot += it.vr * dt;
-    if (!it.done && it.y + it.r > tray.y && it.y < tray.y + tray.h && Math.abs(it.x - tray.x) < tray.w / 2 + 8) {
-      it.done = true;
-      if (it.type === 'burnt') { lives--; combo = 0; burst(it.x, it.y, C.burnt); }
-      else { combo++; score += (it.type === 'gold' ? 5 : 1) * (1 + Math.floor(combo / 5)); burst(it.x, it.y, it.type === 'gold' ? C.gold : C.dough); }
-    } else if (!it.done && it.y > H + 30) {
-      it.done = true;
-      if (it.type !== 'burnt') combo = 0;
-    }
-  }
-  items = items.filter(i => !i.done);
-  for (const c of crumbs) { c.x += c.vx * dt; c.y += c.vy * dt; c.vy += 600 * dt; c.t -= dt; }
-  crumbs = crumbs.filter(c => c.t > 0);
-  if (lives <= 0) {
-    state = 'over';
-    if (score > best) { best = score; try { localStorage.setItem('cc_best', best); } catch (e) {} }
-  }
-}
-
-function drawCookie(it) {
-  ctx.save(); ctx.translate(it.x, it.y); ctx.rotate(it.rot);
-  ctx.fillStyle = it.type === 'burnt' ? C.burnt : it.type === 'gold' ? C.gold : C.dough;
-  ctx.beginPath(); ctx.arc(0, 0, it.r, 0, 7); ctx.fill();
-  ctx.fillStyle = it.type === 'burnt' ? '#5A2E22' : it.type === 'gold' ? '#fff' : C.ink;
-  for (const [cx, cy] of it.chips) { ctx.beginPath(); ctx.ellipse(cx * 11, cy * 11, 4.5, 3.5, 0, 0, 7); ctx.fill(); }
-  ctx.restore();
-}
-
-function text(s, x, y, size, color = C.ink, align = 'center') {
-  ctx.fillStyle = color; ctx.font = `800 ${size}px system-ui, sans-serif`; ctx.textAlign = align; ctx.fillText(s, x, y);
-}
-
-function draw() {
-  ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = C.ink; ctx.fillRect(0, 0, W, 8);
-  items.forEach(drawCookie);
-  ctx.fillStyle = C.rasp; ctx.beginPath(); ctx.roundRect(tray.x - tray.w / 2, tray.y, tray.w, tray.h, 9); ctx.fill();
-  ctx.fillStyle = C.ink; ctx.fillRect(tray.x - 14, tray.y + 6, 28, 5);
-  for (const c of crumbs) { ctx.fillStyle = c.color; ctx.fillRect(c.x, c.y, 5, 5); }
-  text('Score ' + score, 20, 42, 24, C.ink, 'left');
-  text('♥'.repeat(Math.max(lives, 0)), W - 20, 42, 24, C.rasp, 'right');
-  if (combo >= 5) text('Combo x' + (1 + Math.floor(combo / 5)), W / 2, 42, 18, C.rasp);
-  if (state !== 'play' || paused) {
-    ctx.fillStyle = 'rgba(255,240,242,.92)'; ctx.fillRect(0, 0, W, H);
-    if (state === 'menu') {
-      text('Crumble Corner', W / 2, 250, 44); text('Cookie Catch', W / 2, 295, 26, C.rasp);
-      text('Catch the cookies. Dodge the burnt ones.', W / 2, 360, 17);
-      text('Gold cookies are worth 5.', W / 2, 387, 17);
-      text('Arrows / A D or drag to move', W / 2, 430, 15); text('Press Space or tap to bake', W / 2, 520, 22, C.rasp);
-    } else if (state === 'over') {
-      text('Burnt out!', W / 2, 270, 46); text('Score ' + score, W / 2, 330, 28, C.rasp);
-      text('Best ' + best, W / 2, 370, 22); text('Press Space or tap to bake again', W / 2, 470, 20, C.rasp);
-    } else text('Paused', W / 2, H / 2, 40);
-  }
-}
-
-function loop(t) {
-  const dt = Math.min((t - last) / 1000, .05); last = t;
-  if (state === 'play' && !paused) update(dt);
-  draw(); requestAnimationFrame(loop);
-}
-
-function start() { reset(); state = 'play'; paused = false; }
-addEventListener('keydown', e => {
-  keys[e.key] = true;
-  if (e.code === 'Space') { e.preventDefault(); if (state !== 'play') start(); }
-  if (e.key === 'p' && state === 'play') paused = !paused;
-});
-addEventListener('keyup', e => keys[e.key] = false);
-function pointer(e) {
-  const r = cv.getBoundingClientRect();
-  if (state === 'play' && !paused) tray.x = Math.max(tray.w / 2, Math.min(W - tray.w / 2, (e.clientX - r.left) / r.width * W));
-}
-cv.addEventListener('pointermove', pointer);
-cv.addEventListener('pointerdown', e => { if (state !== 'play') start(); else pointer(e); });
-reset(); requestAnimationFrame(loop);
+const B=[["Eager Intern",15,.1,"Whisks fast, asks for raises faster."],["Stand Mixer",100,1,"Loud. Worth it."],["Brick Oven",1100,8,"Never really cools down."],["Cookie Cart",12000,47,"Feeds hungry commuters."],["Night Shift",130000,260,"The bakery never sleeps."],["Cookie Factory",1.4e6,1400,"Conveyor belts and joy."],["Moon Bakery",2e7,7800,"Low gravity, fluffier dough."]];
+const U=[["Sharper Spatula","Clicks bake 2x",100,"c"],["Espresso for Interns","Interns bake 2x",500,0],["Chocolate Gloves","Clicks bake 2x",1e3,"c"],["Turbo Mixer","Mixers bake 2x",5e3,1],["Oven Fan","Ovens bake 2x",5e4,2],["Golden Rolling Pin","Clicks bake 2x",5e4,"c"],["Cart Bell","Carts bake 2x",5e5,3],["Night Lights","Night Shift bakes 2x",5e6,4]];
+const A=[[1,"First crumb"],[1e3,"A proper batch"],[1e4,"Bake sale"],[1e5,"Local legend"],[1e6,"Dough millionaire"],[1e7,"Cookie tycoon"]];
+const $=id=>document.getElementById(id), stage=$('stage');
+const fresh=()=>({c:0,t:0,own:B.map(()=>0),up:[],sp:0,ach:0,off:true,time:Date.now()});
+let s=fresh(), qty=1, fr=0, sig='';
+try{const d=JSON.parse(localStorage.getItem('ccClicker'));if(d&&d.own&&d.own.length===B.length)s=Object.assign(fresh(),d)}catch(e){}
+function f(n){if(n<1e3)return n<10&&n%1?n.toFixed(1):Math.floor(n).toString();const S=['K','M','B','T','Qa','Qi'];let i=-1;while(n>=1e3&&i<5){n/=1e3;i++}return n.toFixed(2)+S[i]}
+const mult=()=>1+.05*s.sp, bm=i=>Math.pow(2,s.up.filter(u=>U[u][3]===i).length);
+const cps=()=>B.reduce((x,b,i)=>x+s.own[i]*b[2]*bm(i),0)*mult()*(fr>0?7:1);
+const clickVal=()=>Math.pow(2,s.up.filter(u=>U[u][3]==='c').length)*mult()*(fr>0?7:1);
+const cost=(i,n)=>B[i][1]*Math.pow(1.15,s.own[i])*(Math.pow(1.15,n)-1)/.15;
+function plan(i){if(qty!=='max')return qty;let n=0;while(n<1000&&cost(i,n+1)<=s.c)n++;return n||1}
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2600)}
+function spawn(cls,txt,x,y,dx){const e=document.createElement('div');e.className=cls;e.textContent=txt||'';const r=stage.getBoundingClientRect();e.style.left=(x-r.left)+'px';e.style.top=(y-r.top)+'px';if(dx!=null)e.style.setProperty('--dx',dx+'px');stage.appendChild(e);setTimeout(()=>e.remove(),950)}
+function bake(x,y){const v=clickVal();s.c+=v;s.t+=v;spawn('float','+'+f(v),x-10+Math.random()*20,y-30);for(let i=0;i<4;i++)spawn('crumb','',x,y,Math.round(Math.random()*80-40));const c=$('cookie');c.classList.add('hit');setTimeout(()=>c.classList.remove('hit'),70)}
+let hold;const ck=$('cookie');
+ck.addEventListener('pointerdown',e=>{e.preventDefault();bake(e.clientX,e.clientY);clearInterval(hold);hold=setInterval(()=>{const r=ck.getBoundingClientRect();bake(r.left+r.width/2,r.top+r.height/2)},140)});
+['pointerup','pointerleave','pointercancel'].forEach(t=>ck.addEventListener(t,()=>clearInterval(hold)));
+ck.addEventListener('click',e=>{if(e.detail===0){const r=ck.getBoundingClientRect();bake(r.left+r.width/2,r.top+r.height/2)}});
+const items=$('items');
+B.forEach((b,i)=>{const el=document.createElement('button');el.className='item';el.innerHTML=`<b>${b[0]}</b><span class="n"></span><span><small>${b[3]}</small><small class="p"></small></span>`;el.onclick=()=>{const n=plan(i),c=cost(i,n);if(s.c>=c){s.c-=c;s.own[i]+=n;toast(`Bought ${n} × ${b[0]}`)}else toast(`Need ${f(c-s.c)} more cookies`);render()};items.appendChild(el)});
+$('qty').addEventListener('click',e=>{const q=e.target.dataset.q;if(!q)return;qty=q==='max'?q:+q;[...$('qty').querySelectorAll('button')].forEach(b=>b.setAttribute('aria-pressed',b.dataset.q==q));render()});
+function renderU(){const v=U.map((u,i)=>i).filter(i=>!s.up.includes(i)&&s.t>=U[i][2]/2);const k=v.join()+s.up.length;if(k===sig)return;sig=k;const box=$('ups');box.innerHTML=v.length?'':'<small>Bake more to unlock upgrades.</small>';v.forEach(i=>{const u=U[i],el=document.createElement('button');el.className='up';el.innerHTML=`<b>${u[0]}</b><small>${u[1]}</small><small><b>${f(u[2])}</b></small>`;el.dataset.i=i;el.onclick=()=>{if(s.c>=u[2]){s.c-=u[2];s.up.push(i);toast(u[0]+' bought: '+u[1]);sig='';render()}else toast(`Need ${f(u[2]-s.c)} more cookies`)};box.appendChild(el)})}
+function render(){const x=cps();$('count').textContent=f(Math.floor(s.c));$('cps').textContent=(fr>0?'Frenzy x7! ':'')+f(x)+' per second';
+ [...items.children].forEach((el,i)=>{const n=plan(i),c=cost(i,n);el.classList.toggle('no',s.c<c);el.querySelector('.n').textContent=s.own[i];el.querySelector('.p').textContent=`Buy ${n} for ${f(c)}`});
+ renderU();[...$('ups').children].forEach(el=>{if(el.dataset.i)el.classList.toggle('no',s.c<U[el.dataset.i][2])});
+ const g=Math.floor(Math.sqrt(s.t/1e6)),p=$('prestige');p.hidden=g<1;p.textContent=`Sell up for ${g} sprinkles (+${g*5}% baking)`;
+ $('stats').textContent=`Baked this run: ${f(s.t)} · Sprinkles: ${s.sp} · Achievements: ${s.ach}/${A.length}`}
+$('prestige').onclick=()=>{const g=Math.floor(Math.sqrt(s.t/1e6));if(g>=1&&confirm(`Start a new bakery and earn ${g} sprinkles? Each sprinkle makes everything bake 5% faster, permanently.`)){s=Object.assign(fresh(),{sp:s.sp+g,ach:s.ach,off:s.off});sig='';toast('A fresh start, with sprinkles on top.');render()}};
+$('off').checked=s.off;$('off').onchange=e=>{s.off=e.target.checked};
+setInterval(()=>{const d=.1,x=cps()*d;s.c+=x;s.t+=x;if(fr>0)fr-=d;while(s.ach<A.length&&s.t>=A[s.ach][0]){toast('Achievement: '+A[s.ach][1]);s.ach++}render()},100);
+function save(){s.time=Date.now();try{localStorage.setItem('ccClicker',JSON.stringify(s))}catch(e){}}
+setInterval(save,10000);addEventListener('beforeunload',save);
+function gold(){setTimeout(()=>{const g=document.createElement('button');g.id='gold';g.textContent='x7';g.setAttribute('aria-label','Golden cookie: click for a baking frenzy');const r=stage.getBoundingClientRect();g.style.left=(40+Math.random()*(r.width-140))+'px';g.style.top=(120+Math.random()*(r.height-260))+'px';g.onclick=()=>{fr=15;g.remove();toast('Cookie Frenzy! Everything bakes 7x for 15 seconds.')};stage.appendChild(g);setTimeout(()=>g.remove(),12000);gold()},45000+Math.random()*75000)}
+const away=(Date.now()-s.time)/1000;
+if(s.off&&away>60&&cps()>0){const g=cps()*Math.min(away,28800)*.5;s.c+=g;s.t+=g;setTimeout(()=>toast(`While you were away, the bakery made ${f(g)} cookies.`),400)}
+gold();render();
 </script>
 </body>
 </html>
