@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crumble Corner – Cookie Catch</title>
+<style>
+  html,body{margin:0;height:100%;background:#3B1F1A;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif}
+  canvas{background:#FFF0F2;max-width:100vw;max-height:100vh;aspect-ratio:2/3;height:100vh;touch-action:none;display:block}
+</style>
+</head>
+<body>
+<canvas id="c" width="480" height="720" aria-label="Cookie Catch game. Move the tray with arrow keys, A and D, or by dragging."></canvas>
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+const C = {ink:'#3B1F1A', pink:'#FFF0F2', rasp:'#C42A52', dough:'#E3A857', gold:'#F2B71F', burnt:'#2A1512'};
+let state = 'menu', score, lives, combo, best = +(localStorage.getItem('cc_best') || 0);
+let tray, items, crumbs, spawnT, speed, keys = {}, paused = false, last = 0;
+
+function reset() {
+  score = 0; lives = 3; combo = 0; items = []; crumbs = []; spawnT = 0; speed = 160;
+  tray = {x: W / 2, w: 110, h: 18, y: H - 70};
+}
+
+function spawn() {
+  const r = Math.random();
+  const type = r < 0.18 ? 'burnt' : r < 0.26 ? 'gold' : 'normal';
+  items.push({type, x: 30 + Math.random() * (W - 60), y: -30, r: 22, rot: Math.random() * 6,
+    vr: (Math.random() - .5) * 3, chips: Array.from({length: 5}, () => [Math.random() * 2 - 1, Math.random() * 2 - 1])});
+}
+
+function burst(x, y, color) {
+  for (let i = 0; i < 10; i++) crumbs.push({x, y, vx: (Math.random() - .5) * 220, vy: -Math.random() * 200, t: .5, color});
+}
+
+function update(dt) {
+  const move = (keys.ArrowRight || keys.d ? 1 : 0) - (keys.ArrowLeft || keys.a ? 1 : 0);
+  tray.x = Math.max(tray.w / 2, Math.min(W - tray.w / 2, tray.x + move * 420 * dt));
+  spawnT -= dt;
+  if (spawnT <= 0) { spawn(); spawnT = Math.max(.35, 1 - score / 400); }
+  speed = 160 + Math.min(score * 1.2, 260);
+  for (const it of items) {
+    it.y += speed * dt; it.rot += it.vr * dt;
+    if (!it.done && it.y + it.r > tray.y && it.y < tray.y + tray.h && Math.abs(it.x - tray.x) < tray.w / 2 + 8) {
+      it.done = true;
+      if (it.type === 'burnt') { lives--; combo = 0; burst(it.x, it.y, C.burnt); }
+      else { combo++; score += (it.type === 'gold' ? 5 : 1) * (1 + Math.floor(combo / 5)); burst(it.x, it.y, it.type === 'gold' ? C.gold : C.dough); }
+    } else if (!it.done && it.y > H + 30) {
+      it.done = true;
+      if (it.type !== 'burnt') combo = 0;
+    }
+  }
+  items = items.filter(i => !i.done);
+  for (const c of crumbs) { c.x += c.vx * dt; c.y += c.vy * dt; c.vy += 600 * dt; c.t -= dt; }
+  crumbs = crumbs.filter(c => c.t > 0);
+  if (lives <= 0) {
+    state = 'over';
+    if (score > best) { best = score; try { localStorage.setItem('cc_best', best); } catch (e) {} }
+  }
+}
+
+function drawCookie(it) {
+  ctx.save(); ctx.translate(it.x, it.y); ctx.rotate(it.rot);
+  ctx.fillStyle = it.type === 'burnt' ? C.burnt : it.type === 'gold' ? C.gold : C.dough;
+  ctx.beginPath(); ctx.arc(0, 0, it.r, 0, 7); ctx.fill();
+  ctx.fillStyle = it.type === 'burnt' ? '#5A2E22' : it.type === 'gold' ? '#fff' : C.ink;
+  for (const [cx, cy] of it.chips) { ctx.beginPath(); ctx.ellipse(cx * 11, cy * 11, 4.5, 3.5, 0, 0, 7); ctx.fill(); }
+  ctx.restore();
+}
+
+function text(s, x, y, size, color = C.ink, align = 'center') {
+  ctx.fillStyle = color; ctx.font = `800 ${size}px system-ui, sans-serif`; ctx.textAlign = align; ctx.fillText(s, x, y);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = C.ink; ctx.fillRect(0, 0, W, 8);
+  items.forEach(drawCookie);
+  ctx.fillStyle = C.rasp; ctx.beginPath(); ctx.roundRect(tray.x - tray.w / 2, tray.y, tray.w, tray.h, 9); ctx.fill();
+  ctx.fillStyle = C.ink; ctx.fillRect(tray.x - 14, tray.y + 6, 28, 5);
+  for (const c of crumbs) { ctx.fillStyle = c.color; ctx.fillRect(c.x, c.y, 5, 5); }
+  text('Score ' + score, 20, 42, 24, C.ink, 'left');
+  text('♥'.repeat(Math.max(lives, 0)), W - 20, 42, 24, C.rasp, 'right');
+  if (combo >= 5) text('Combo x' + (1 + Math.floor(combo / 5)), W / 2, 42, 18, C.rasp);
+  if (state !== 'play' || paused) {
+    ctx.fillStyle = 'rgba(255,240,242,.92)'; ctx.fillRect(0, 0, W, H);
+    if (state === 'menu') {
+      text('Crumble Corner', W / 2, 250, 44); text('Cookie Catch', W / 2, 295, 26, C.rasp);
+      text('Catch the cookies. Dodge the burnt ones.', W / 2, 360, 17);
+      text('Gold cookies are worth 5.', W / 2, 387, 17);
+      text('Arrows / A D or drag to move', W / 2, 430, 15); text('Press Space or tap to bake', W / 2, 520, 22, C.rasp);
+    } else if (state === 'over') {
+      text('Burnt out!', W / 2, 270, 46); text('Score ' + score, W / 2, 330, 28, C.rasp);
+      text('Best ' + best, W / 2, 370, 22); text('Press Space or tap to bake again', W / 2, 470, 20, C.rasp);
+    } else text('Paused', W / 2, H / 2, 40);
+  }
+}
+
+function loop(t) {
+  const dt = Math.min((t - last) / 1000, .05); last = t;
+  if (state === 'play' && !paused) update(dt);
+  draw(); requestAnimationFrame(loop);
+}
+
+function start() { reset(); state = 'play'; paused = false; }
+addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if (e.code === 'Space') { e.preventDefault(); if (state !== 'play') start(); }
+  if (e.key === 'p' && state === 'play') paused = !paused;
+});
+addEventListener('keyup', e => keys[e.key] = false);
+function pointer(e) {
+  const r = cv.getBoundingClientRect();
+  if (state === 'play' && !paused) tray.x = Math.max(tray.w / 2, Math.min(W - tray.w / 2, (e.clientX - r.left) / r.width * W));
+}
+cv.addEventListener('pointermove', pointer);
+cv.addEventListener('pointerdown', e => { if (state !== 'play') start(); else pointer(e); });
+reset(); requestAnimationFrame(loop);
+</script>
+</body>
+</html>
